@@ -13,6 +13,7 @@ import yt_dlp
 import discord
 from discord.ext import commands
 
+discord.opus.load_opus('/opt/homebrew/opt/opus/lib/libopus.dylib')  # Update with the actual path from brew --prefix opus
 
 load_dotenv()
 
@@ -147,5 +148,45 @@ async def canloop(interaction: discord.Interaction, userinput: str):
 async def add_song_to_queue(interaction: discord.Interaction, song_name: str):
     result = mainqueue.add_to_queue(song_name)
     await interaction.response.send_message(result)
+
+@tree.command(name="play-yt", description="Plays audio from a YouTube video.")
+async def play_yt(interaction: discord.Interaction, url: str):
+    if not interaction.user.voice:
+        await interaction.response.send_message("You need to be in a voice channel to play audio.")
+        return
+
+    channel = interaction.user.voice.channel
+    voice_client = interaction.guild.voice_client
+
+    if voice_client is None:
+        voice_client = await channel.connect()
+
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'outtmpl': 'downloads/%(title)s.%(ext)s',
+        'quiet': True,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            audio_file = f"downloads/{info['title']}.mp3"
+        voice_client.play(discord.FFmpegPCMAudio(audio_file), after=lambda e: cleanup_after_playback(audio_file))
+        await interaction.response.send_message(f"Now playing: {info['title']}")
+    except Exception as e:
+        if not interaction.response.is_done():  # Check if response is already sent
+            await interaction.response.send_message(f"An error occurred: {str(e)}")
+        else:
+            print(f"Error while handling interaction: {str(e)}")
+
+def cleanup_after_playback(audio_file):
+    if os.path.exists(audio_file):
+        os.remove(audio_file)  # Delete the audio file after playback
+        print(f"Deleted audio file: {audio_file}")
 
 bot.run(TOKEN)
