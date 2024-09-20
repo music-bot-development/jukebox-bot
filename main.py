@@ -10,7 +10,7 @@ load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 
 # Channel ID where the bot should log the start and shutdown messages
-LOG_CHANNEL_ID = 1286649079266279549
+LOG_CHANNEL_ID = os.getenv('LOG_CHANNEL_ID')
 
 # Create a bot instance
 intents = discord.Intents.default()
