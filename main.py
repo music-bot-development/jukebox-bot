@@ -1,11 +1,18 @@
 from dotenv import load_dotenv
+import os
+import music_queue
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
+from discord import app_commands  # Import for slash commands
 import os
 import sys
 import asyncio
 from pydub import AudioSegment
-import music_queue
+import yt_dlp
+import discord
+from discord.ext import commands
+
 
 load_dotenv()
 
@@ -17,25 +24,30 @@ LOG_CHANNEL_ID = os.getenv('LOG_CHANNEL_ID')
 # The bot's current voice client
 voice_client = None
 
-# Create a bot instance
-intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="/", intents=intents)
 
 mainqueue = music_queue.queue([], True)
 
-# Event when the bot has connected to Discord
+
+TOKEN = os.getenv('BOT_TOKEN')
+LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))  # Ensure this is an int
+
+# Intents setup
+intents = discord.Intents.default()
+intents.message_content = True  # Enable privileged message content intent
+bot = commands.Bot(command_prefix="/", intents=intents)
+
+# Create an instance of CommandTree for slash commands
+tree = bot.tree
+
 @bot.event
 async def on_ready():
-    try:
-        await bot.tree.sync()
-        print("Slash commands have been synced.")
-    except Exception as e:
-        print(f"Failed to sync slash commands: {e}")
-
+    await tree.sync()  # Sync slash commands
+    print("Slash commands have been synced.")
     channel = bot.get_channel(LOG_CHANNEL_ID)
     if channel:
         await channel.send("Bot has started up!")
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
+
 @bot.tree.command(name="stop", description="Shuts down the bot, useful for simulating crashes")
 async def stop(interaction: discord.Interaction):
     channel = bot.get_channel(LOG_CHANNEL_ID)
