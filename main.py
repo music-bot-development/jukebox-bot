@@ -4,6 +4,8 @@ from discord.ext import commands
 import nacl
 import os
 import sys
+import soundplayer
+import threading
 
 load_dotenv()
 
@@ -62,6 +64,9 @@ async def join(interaction: discord.Interaction, channel_name: str):
         # Connect to the voice channel
         await voice_channel.connect()
         await interaction.response.send_message(f"Joined voice channel '{channel_name}'.")
+    
+    Soundplayer_Thread = threading.Thread(target=soundplayer.main, args=[])
+    Soundplayer_Thread.start()
 
 
 # Slash command to leave the voice channel
