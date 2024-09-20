@@ -5,6 +5,7 @@ import os
 import sys
 import asyncio
 from pydub import AudioSegment
+import music_queue
 
 load_dotenv()
 
@@ -13,10 +14,14 @@ TOKEN = os.getenv('BOT_TOKEN')
 # Channel ID where the bot should log the start and shutdown messages
 LOG_CHANNEL_ID = os.getenv('LOG_CHANNEL_ID')
 
+# The bot's current voice client
+voice_client = None
+
 # Create a bot instance
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="/", intents=intents)
 
+mainqueue = music_queue.queue([], True)
 
 # Event when the bot has connected to Discord
 @bot.event
@@ -74,11 +79,18 @@ async def leave(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("I'm not in a voice channel.")
 
-@bot.tree.command(name="play", description="Plays audio from a file.")
-async def play(interaction: discord.Interaction, file_path: str):
+@bot.tree.command(name="play", description="Plays audio from queue.")
+async def play(interaction: discord.Interaction):
     if not interaction.user.voice:
         await interaction.response.send_message("You need to be in a voice channel to play audio.")
         return
+
+    if len(mainqueue.file_array) <= 0:
+        await interaction.response.send_message("The queue is empty.")
+        return
+
+    song_name = mainqueue.get_current_song()
+    file_path = mainqueue.name_to_path(song_name)
 
     channel = interaction.user.voice.channel
     voice_client = interaction.guild.voice_client
@@ -96,16 +108,32 @@ async def play(interaction: discord.Interaction, file_path: str):
         await interaction.response.send_message("Unsupported file format. Please use .wav or .mp3.")
         return
 
-    voice_client.play(discord.FFmpegPCMAudio(wav_file_path), after=lambda e: print(f'Finished playing: {e}'))
+    voice_client.play(discord.FFmpegPCMAudio(wav_file_path), after=mainqueue.goto_next_song())
 
-    await interaction.response.send_message(f"Now playing: {file_path}")
+    await interaction.response.send_message(f"Now playing: {song_name}")
 
     while voice_client.is_playing():
         await asyncio.sleep(1)
 
-    await voice_client.disconnect()  # Disconnect after playing
     if os.path.exists(wav_file_path):
         os.remove(wav_file_path)  # Remove temporary file
 
+@bot.tree.command(name="listqueue", description="Lists all of the Songs in the current queue.")
+async def listqueue(interaction: discord.Interaction):
+    await interaction.response.send_message(mainqueue.list_queue())
+
+@bot.tree.command(name="canloop", description="TRUE or FALSE: do you want the playlist to loop?")
+async def canloop(interaction: discord.Interaction, userinput: str):
+    if userinput == "TRUE":
+        mainqueue.loop_when_done_playing = True
+    elif userinput == "False":
+        mainqueue.loop_when_done_playing = False
+    else:
+        await interaction.response.send_message("Sorry, I could not understand the parameter.")
+
+@bot.tree.command(name="add_song_to_queue", description="Adds a song to the queue.")
+async def add_song_to_queue(interaction: discord.Interaction, song_name: str):
+    result = mainqueue.add_to_queue(song_name)
+    await interaction.response.send_message(result)
 
 bot.run(TOKEN)
