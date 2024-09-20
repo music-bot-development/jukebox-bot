@@ -7,7 +7,7 @@ import sys
 load_dotenv()
 
 
-TOKEN = "MTI4NjY4Nzk4Mzg3MzAzNjQwMg.GXBYH4.Pid_aMxrr5EwWqXjTGs_PwsjxhlAiI9LeRHuls"
+TOKEN = os.getenv('BOT_TOKEN')
 
 # Channel ID where the bot should log the start and shutdown messages
 LOG_CHANNEL_ID = 1286649079266279549
