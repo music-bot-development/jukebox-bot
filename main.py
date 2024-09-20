@@ -43,5 +43,38 @@ async def stop(interaction: discord.Interaction):
     await bot.close()
     sys.exit()
 
+# Slash command to join a voice channel
+@bot.tree.command(name="join", description="Makes the bot join a voice channel")
+async def join(interaction: discord.Interaction, channel_name: str):
+    # Get the voice channel by name
+    guild = interaction.guild
+    voice_channel = discord.utils.get(guild.voice_channels, name=channel_name)
+
+    if voice_channel is None:
+        await interaction.response.send_message(f"Channel '{channel_name}' not found.")
+        return
+
+    # Check if the bot is already connected to a voice channel
+    if interaction.guild.voice_client is not None:
+        await interaction.guild.voice_client.move_to(voice_channel)
+        await interaction.response.send_message(f"Moved to voice channel '{channel_name}'.")
+    else:
+        # Connect to the voice channel
+        await voice_channel.connect()
+        await interaction.response.send_message(f"Joined voice channel '{channel_name}'.")
+
+
+# Slash command to leave the voice channel
+@bot.tree.command(name="leave", description="Makes the bot leave the current voice channel")
+async def leave(interaction: discord.Interaction):
+    # Check if the bot is connected to a voice channel
+    voice_client = interaction.guild.voice_client
+
+    if voice_client and voice_client.is_connected():
+        await voice_client.disconnect()
+        await interaction.response.send_message("Disconnected from the voice channel.")
+    else:
+        await interaction.response.send_message("I'm not in a voice channel.")
+
 
 bot.run(TOKEN)
