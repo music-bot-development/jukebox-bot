@@ -1,11 +1,11 @@
 from dotenv import load_dotenv
 import discord
 from discord.ext import commands
+import nacl
 import os
 import sys
 
 load_dotenv()
-
 
 TOKEN = os.getenv('BOT_TOKEN')
 
