@@ -32,7 +32,7 @@ async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
 
-@bot.tree.command(name="stop", description="Shuts down the bot")
+@bot.tree.command(name="stop", description="Shuts down the bot, useful for simulating crashes")
 async def stop(interaction: discord.Interaction):
     channel = bot.get_channel(LOG_CHANNEL_ID)
     if channel:
