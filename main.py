@@ -13,7 +13,7 @@ import yt_dlp
 import discord
 from discord.ext import commands
 
-discord.opus.load_opus('/opt/homebrew/opt/opus/lib/libopus.dylib')  # Update with the actual path from brew --prefix opus
+discord.opus.load_opus('/opt/homebrew/opt/opus/lib/libopus.dylib') 
 
 load_dotenv()
 
