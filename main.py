@@ -173,8 +173,7 @@ async def play_yt(interaction: discord.Interaction, url: str):
     }
 
     try:
-        # ToDo: Fix this, bot should response with the now playing title etc.
-        await interaction.response.send_message("Playing now…")
+        await interaction.response.send_message("Playing now: " + url)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             audio_file = f"downloads/{info['title']}.mp3"
@@ -189,5 +188,11 @@ def cleanup_after_playback(audio_file):
     if os.path.exists(audio_file):
         os.remove(audio_file)  # Delete the audio file after playback
         print(f"Deleted audio file: {audio_file}")
+
+    # Force kill the FFmpeg process if not terminated
+    for proc in psutil.process_iter():
+        if proc.name() == 'ffmpeg':
+            proc.kill()
+            print(f"Force killed lingering FFmpeg process: {proc.pid}")
 
 bot.run(TOKEN)
