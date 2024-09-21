@@ -173,17 +173,18 @@ async def play_yt(interaction: discord.Interaction, url: str):
     }
 
     try:
+        # ToDo: Fix this, bot should response with the now playing title etc.
+        await interaction.response.send_message("Playing now…")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             audio_file = f"downloads/{info['title']}.mp3"
         voice_client.play(discord.FFmpegPCMAudio(audio_file), after=lambda e: cleanup_after_playback(audio_file))
-        await interaction.response.send_message(f"Now playing: {info['title']}")
+        #await interaction.response.send_message(f"Now playing: {info['title']}")
     except Exception as e:
         if not interaction.response.is_done():  # Check if response is already sent
             await interaction.response.send_message(f"An error occurred: {str(e)}")
         else:
             print(f"Error while handling interaction: {str(e)}")
-
 def cleanup_after_playback(audio_file):
     if os.path.exists(audio_file):
         os.remove(audio_file)  # Delete the audio file after playback
