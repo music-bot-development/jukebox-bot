@@ -151,6 +151,11 @@ async def add_song_to_queue(interaction: discord.Interaction, song_name: str):
 
 @tree.command(name="play-yt", description="Plays audio from a YouTube video.")
 async def play_yt(interaction: discord.Interaction, url: str):
+
+    if not "youtube.com" in url:
+        await interaction.response.send_message("You have to use a youtube Link")
+        return
+
     if not interaction.user.voice:
         await interaction.response.send_message("You need to be in a voice channel to play audio.")
         return
