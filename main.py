@@ -1,31 +1,30 @@
-import asyncio
-import os
-import re
-import sys
-
-import discord
+import time
 import psutil
-import yt_dlp
-from discord.ext import commands
-from dotenv import load_dotenv
-from pydub import AudioSegment
-
 import music_queue
+from dotenv import load_dotenv
+import discord
+from discord.ext import commands
+import os
+import sys
+import asyncio
+from pydub import AudioSegment
+import yt_dlp
+import re
 
-discord.opus.load_opus('/opt/homebrew/opt/opus/lib/libopus.dylib')
-
+# Load environment variables
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
 OPUS_PATH = os.getenv('OPUS_PATH')
 
+# Load the Opus library using the path from the .env file
+discord.opus.load_opus(OPUS_PATH)
+
 voice_client = None
 mainqueue = music_queue.queue([], True)
-
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="/", intents=intents)
-
 tree = bot.tree
 
 
@@ -142,14 +141,11 @@ async def play_yt(interaction: discord.Interaction, url: str):
     if not interaction.user.voice:
         await interaction.response.send_message("You need to be in a voice channel to play audio.")
         return
-
     await interaction.response.defer()
-
     channel = interaction.user.voice.channel
     voice_client = interaction.guild.voice_client
     if voice_client is None:
         voice_client = await channel.connect()
-
     ydl_opts = {
         'format': 'bestaudio/best',
         'postprocessors': [{
@@ -160,7 +156,6 @@ async def play_yt(interaction: discord.Interaction, url: str):
         'outtmpl': 'downloads/temp_%(id)s.%(ext)s',  # Temporarily download with a safe name
         'quiet': True,
     }
-
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -169,11 +164,9 @@ async def play_yt(interaction: discord.Interaction, url: str):
             downloaded_temp_file = f"downloads/temp_{video_id}.mp3"
             sanitized_title = sanitize_filename(raw_title)
             final_audio_file = f"downloads/{sanitized_title}.mp3"
-
             if os.path.exists(downloaded_temp_file):
                 os.rename(downloaded_temp_file, final_audio_file)
                 print(f"Renamed file from {downloaded_temp_file} to {final_audio_file}")
-
         voice_client.play(discord.FFmpegPCMAudio(final_audio_file),
                           after=lambda e: cleanup_after_playback(final_audio_file))
         await interaction.followup.send(f"Playing now: {url}")
