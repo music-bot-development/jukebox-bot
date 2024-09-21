@@ -1,33 +1,31 @@
-import time
-import psutil
-import music_queue
-from dotenv import load_dotenv
-import discord
-from discord.ext import commands
-import os
-import sys
 import asyncio
-from pydub import AudioSegment
-import yt_dlp
+import os
 import re
+import sys
+
+import discord
+import psutil
+import yt_dlp
+from discord.ext import commands
+from dotenv import load_dotenv
+from pydub import AudioSegment
+
+import music_queue
 
 discord.opus.load_opus('/opt/homebrew/opt/opus/lib/libopus.dylib')
+
 load_dotenv()
-
 TOKEN = os.getenv('BOT_TOKEN')
-LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))  # Ensure this is an int
+LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
+OPUS_PATH = os.getenv('OPUS_PATH')
 
-# The bot's current voice client
 voice_client = None
-
 mainqueue = music_queue.queue([], True)
 
-# Intents setup
 intents = discord.Intents.default()
-intents.message_content = True  # Enable privileged message content intent
+intents.message_content = True
 bot = commands.Bot(command_prefix="/", intents=intents)
 
-# Create an instance of CommandTree for slash commands
 tree = bot.tree
 
 
@@ -105,13 +103,10 @@ async def play(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("Unsupported file format. Please use .wav or .mp3.")
         return
-
     voice_client.play(discord.FFmpegPCMAudio(wav_file_path), after=mainqueue.goto_next_song())
     await interaction.response.send_message(f"Now playing: {song_name}")
-
     while voice_client.is_playing():
         await asyncio.sleep(1)
-
     if os.path.exists(wav_file_path):
         os.remove(wav_file_path)  # Remove temporary file
 
@@ -147,10 +142,14 @@ async def play_yt(interaction: discord.Interaction, url: str):
     if not interaction.user.voice:
         await interaction.response.send_message("You need to be in a voice channel to play audio.")
         return
+
+    await interaction.response.defer()
+
     channel = interaction.user.voice.channel
     voice_client = interaction.guild.voice_client
     if voice_client is None:
         voice_client = await channel.connect()
+
     ydl_opts = {
         'format': 'bestaudio/best',
         'postprocessors': [{
@@ -158,23 +157,28 @@ async def play_yt(interaction: discord.Interaction, url: str):
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'outtmpl': 'downloads/%(title)s.%(ext)s',
+        'outtmpl': 'downloads/temp_%(id)s.%(ext)s',  # Temporarily download with a safe name
         'quiet': True,
     }
+
     try:
-        await interaction.response.send_message("Playing now: " + url)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             raw_title = info['title']
+            video_id = info['id']
+            downloaded_temp_file = f"downloads/temp_{video_id}.mp3"
             sanitized_title = sanitize_filename(raw_title)
-            audio_file = f"downloads/{sanitized_title}.mp3"
-            time.sleep(1)
-        voice_client.play(discord.FFmpegPCMAudio(audio_file), after=lambda e: cleanup_after_playback(audio_file))
+            final_audio_file = f"downloads/{sanitized_title}.mp3"
+
+            if os.path.exists(downloaded_temp_file):
+                os.rename(downloaded_temp_file, final_audio_file)
+                print(f"Renamed file from {downloaded_temp_file} to {final_audio_file}")
+
+        voice_client.play(discord.FFmpegPCMAudio(final_audio_file),
+                          after=lambda e: cleanup_after_playback(final_audio_file))
+        await interaction.followup.send(f"Playing now: {url}")
     except Exception as e:
-        if not interaction.response.is_done():  # Check if response is already sent
-            await interaction.response.send_message(f"An error occurred: {str(e)}")
-        else:
-            print(f"Error while handling interaction: {str(e)}")
+        await interaction.followup.send(f"An error occurred: {str(e)}")
 
 
 def cleanup_after_playback(audio_file):
@@ -189,12 +193,8 @@ def cleanup_after_playback(audio_file):
 
 
 def sanitize_filename(filename):
-    # Remove any problematic characters like |, <, >, :, ", /, \, ?, *
-    filename = filename.lower().replace(' ', '').replace('|', '').replace(':', '').replace('｜', '').replace('\\',
-                                                                                                            '').replace(
-        '//', '')
-    return filename
-    # return re.sub(r'[<>:"/\\|?* ]', '', filename)
+    # Replace any character that is not a letter, number, hyphen, or underscore with an underscore
+    return re.sub(r'[^a-zA-Z0-9-_]', '_', filename)
 
 
 bot.run(TOKEN)
