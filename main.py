@@ -1,7 +1,7 @@
 import os
-import re
+from downloader import *
+from fileManagement import *
 import sys
-import psutil
 import asyncio
 import discord
 import yt_dlp
@@ -120,12 +120,14 @@ async def play(interaction: discord.Interaction):
     mainqueue.goto_next_song()
     await interaction.response.send_message(f"Now playing: {song_name}")
 
-# TODO: implement more cleanly (less repetition of code):
-# the play and on_song_end functions are very similar
 def on_song_end(guild):
+    voice_client = bot.custom_voice_clients.get(guild.id)
+
     if mainqueue.file_array:
         next_song = mainqueue.get_current_song()
         file_path = mainqueue.name_to_path(next_song)
+
+        # Determine wav file path
         if file_path.endswith('.mp3'):
             audio = AudioSegment.from_mp3(file_path)
             wav_file_path = "temp.wav"
@@ -133,27 +135,25 @@ def on_song_end(guild):
         elif file_path.endswith('.wav'):
             wav_file_path = file_path
         else:
-            return
-        voice_client = bot.custom_voice_clients.get(guild.id)
+            return  # Unsupported format, exit the function
+
+        # Play the song if the voice client exists
         if voice_client:
             voice_client.play(discord.FFmpegPCMAudio(wav_file_path), after=lambda e: on_song_end(guild))
-        if os.path.exists("temp.wav"):
+
+        # Remove temp file if created
+        if file_path.endswith('.mp3') and os.path.exists("temp.wav"):
             os.remove("temp.wav")
+
     else:
-        voice_client = bot.custom_voice_clients.get(guild.id)
+        # Disconnect and cleanup if no more songs
         if voice_client:
             asyncio.run_coroutine_threadsafe(voice_client.disconnect(), bot.loop)
             bot.custom_voice_clients.pop(guild.id, None)
+
+        # Clean up temp file if it exists
         if os.path.exists("temp.wav"):
             os.remove("temp.wav")
-
-# TODO: maybe move this along other functions to another file
-def cleanup_ffmpeg():
-    # Helper function to kill any lingering FFmpeg processes.
-    for proc in psutil.process_iter():
-        if proc.name() == 'ffmpeg':
-            proc.kill()
-            print(f"Force killed lingering FFmpeg process: {proc.pid}")
 
 
 @tree.command(name="play-yt", description="Plays audio from a YouTube video.")
@@ -173,17 +173,6 @@ async def play_yt(interaction: discord.Interaction, url: str):
         voice_client = await channel.connect(self_deaf=True)  # Make the bot deaf
         bot.custom_voice_clients[interaction.guild.id] = voice_client
 
-    # TODO: move to downloader.py
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'outtmpl': 'downloads/temp_%(id)s.%(ext)s',  # Temporarily download with a safe name
-        'quiet': True,
-    }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -212,10 +201,6 @@ def cleanup_after_playback(audio_file, guild):
         bot.custom_voice_clients.pop(guild.id, None)
         print("Disconnected from the voice channel after playback.")
 
-# TODO: move to downloader.py
-def sanitize_filename(filename):
-    # Replace any character that is not a letter, number, hyphen, or underscore with an underscore
-    return re.sub(r'[^a-zA-Z0-9-_]', '_', filename)
 
 
 bot.run(TOKEN)
