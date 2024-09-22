@@ -8,12 +8,11 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from pydub import AudioSegment
 import music_queue
-import atexit
+
 
 def exit_handler():
     print('Deleting all files…')
     fileManagement.cleanup_download_folder()
-atexit.register(exit_handler)
 
 # Load environment variables
 load_dotenv()
