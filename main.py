@@ -1,10 +1,9 @@
 import os
-from downloader import *
-from fileManagement import *
+import downloader
+import fileManagement
 import sys
 import asyncio
 import discord
-import yt_dlp
 from discord.ext import commands
 from dotenv import load_dotenv
 from pydub import AudioSegment
@@ -13,17 +12,13 @@ import atexit
 
 def exit_handler():
     print('Deleting all files…')
-    os.removedirs('downloads')
+    fileManagement.cleanup_download_folder()
 atexit.register(exit_handler)
 
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
-OPUS_PATH = os.getenv('OPUS_PATH')
-
-# Load the Opus library using the path from the .env file
-discord.opus.load_opus(OPUS_PATH)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -33,7 +28,6 @@ tree = bot.tree
 # Track voice clients for each guild
 bot.custom_voice_clients = {}
 mainqueue = music_queue.queue([], True)
-
 
 @bot.event
 async def on_ready():
@@ -78,12 +72,15 @@ async def join(interaction: discord.Interaction, channel_name: str):
 @tree.command(name="leave", description="Makes the bot leave the current voice channel")
 async def leave(interaction: discord.Interaction):
     voice_client = bot.custom_voice_clients.get(interaction.guild.id)
+
     if voice_client:
         await voice_client.disconnect()
         await interaction.response.send_message("Disconnected from the voice channel.")
         bot.custom_voice_clients.pop(interaction.guild.id, None)
     else:
         await interaction.response.send_message("I'm not in a voice channel.")
+    
+    cleanup(voice_client)
 
 
 # Slash command to play audio from the queue
@@ -158,6 +155,9 @@ def on_song_end(guild):
 
 @tree.command(name="play-yt", description="Plays audio from a YouTube video.")
 async def play_yt(interaction: discord.Interaction, url: str):
+    
+    fileManagement.cleanup_download_folder()
+
     if "youtube.com" not in url:
         await interaction.response.send_message("Please provide a valid YouTube link.")
         return
@@ -173,34 +173,26 @@ async def play_yt(interaction: discord.Interaction, url: str):
         voice_client = await channel.connect(self_deaf=True)  # Make the bot deaf
         bot.custom_voice_clients[interaction.guild.id] = voice_client
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            raw_title = info['title']
-            video_id = info['id']
-            downloaded_temp_file = f"downloads/temp_{video_id}.mp3"
-            sanitized_title = sanitize_filename(raw_title)
-            final_audio_file = f"downloads/{sanitized_title}.mp3"
-            if os.path.exists(downloaded_temp_file):
-                os.rename(downloaded_temp_file, final_audio_file)
-                print(f"Renamed file from {downloaded_temp_file} to {final_audio_file}")
-        voice_client.play(discord.FFmpegPCMAudio(final_audio_file),
-                          after=lambda e: cleanup_after_playback(final_audio_file, interaction.guild))
-        await interaction.followup.send(f"Now playing: {url}")
-    except Exception as e:
-        await interaction.followup.send(f"An error occurred: {str(e)}")
+    success, file_or_errormsg = downloader.download_yt_mp3_from_url(url)
 
-def cleanup_after_playback(audio_file, guild):
-    if os.path.exists(audio_file):
-        os.remove(audio_file)  # Delete the audio file after playback
-        print(f"Deleted audio file: {audio_file}")
-    cleanup_ffmpeg()  # Kill FFmpeg processes if any
-    voice_client = bot.custom_voice_clients.get(guild.id)
-    if voice_client and not voice_client.is_playing():
-        asyncio.run_coroutine_threadsafe(voice_client.disconnect(), bot.loop)
-        bot.custom_voice_clients.pop(guild.id, None)
-        print("Disconnected from the voice channel after playback.")
+    audiofile = ""
 
+    if not success:
+        await interaction.followup.send(f"An error occurred: {str(file_or_errormsg)}")
+        return
+    else:
+        audiofile = file_or_errormsg
+
+    await interaction.followup.send(f"Now playing: {url}")
+    voice_client.play(discord.FFmpegPCMAudio(audiofile),
+                        after=lambda e: cleanup(voice_client))
+
+def cleanup(client):
+    
+    client.stop()
+
+    fileManagement.cleanup_ffmpeg()
+    fileManagement.cleanup_download_folder()
 
 
 bot.run(TOKEN)
