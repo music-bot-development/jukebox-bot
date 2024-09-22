@@ -114,7 +114,8 @@ async def play(interaction: discord.Interaction):
     mainqueue.goto_next_song()
     await interaction.response.send_message(f"Now playing: {song_name}")
 
-
+# TODO: implement more cleanly (less repetition of code):
+# the play and on_song_end functions are very similar
 def on_song_end(guild):
     if mainqueue.file_array:
         next_song = mainqueue.get_current_song()
@@ -140,9 +141,9 @@ def on_song_end(guild):
         if os.path.exists("temp.wav"):
             os.remove("temp.wav")
 
-
+# TODO: maybe move this along other functions to another file
 def cleanup_ffmpeg():
-    """Helper function to kill any lingering FFmpeg processes."""
+    # Helper function to kill any lingering FFmpeg processes.
     for proc in psutil.process_iter():
         if proc.name() == 'ffmpeg':
             proc.kill()
@@ -160,11 +161,13 @@ async def play_yt(interaction: discord.Interaction, url: str):
     await interaction.response.defer()
     channel = interaction.user.voice.channel
     voice_client = bot.custom_voice_clients.get(interaction.guild.id)
-
+    
+    # TODO: maybe move to own function
     if voice_client is None or not voice_client.is_connected():
         voice_client = await channel.connect(self_deaf=True)  # Make the bot deaf
         bot.custom_voice_clients[interaction.guild.id] = voice_client
 
+    # TODO: move to downloader.py
     ydl_opts = {
         'format': 'bestaudio/best',
         'postprocessors': [{
@@ -192,7 +195,6 @@ async def play_yt(interaction: discord.Interaction, url: str):
     except Exception as e:
         await interaction.followup.send(f"An error occurred: {str(e)}")
 
-
 def cleanup_after_playback(audio_file, guild):
     if os.path.exists(audio_file):
         os.remove(audio_file)  # Delete the audio file after playback
@@ -204,7 +206,7 @@ def cleanup_after_playback(audio_file, guild):
         bot.custom_voice_clients.pop(guild.id, None)
         print("Disconnected from the voice channel after playback.")
 
-
+# TODO: move to downloader.py
 def sanitize_filename(filename):
     # Replace any character that is not a letter, number, hyphen, or underscore with an underscore
     return re.sub(r'[^a-zA-Z0-9-_]', '_', filename)
