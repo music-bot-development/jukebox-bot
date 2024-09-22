@@ -1,0 +1,25 @@
+name: Check Organization Membership
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  check_membership:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Organization Membership
+        uses: octokit/request-action@v2.x
+        with:
+          github-token: ${{ secrets.G_TOKEN }}
+          route: https://github.com/orgs/music-bot-development/people
+        id: org_members
+
+      - name: Validate Creator
+        run: |
+          if ! echo "${{ github.actor }}" | grep -q -F "${{ steps.org_members.outputs.data }}"; then
+            echo "User '${{ github.actor }}' is not a member of the organization."
+            exit 1
+          fi
