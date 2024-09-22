@@ -13,7 +13,8 @@ import atexit
 
 def exit_handler():
     print('Deleting all files…')
-    os.removedirs('downloads')
+    if os.path.exists('downloads'):
+        os.removedirs('downloads')
 atexit.register(exit_handler)
 
 # Load environment variables
