@@ -1,16 +1,11 @@
 import os
 import sys
-import asyncio
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import yt_dlp
-
 import streaming
 
 
-def exit_handler():
-    print('Deleting all files…')
 
 
 # Load environment variables
