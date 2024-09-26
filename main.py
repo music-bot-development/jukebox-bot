@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 import streaming
 
 
-
-
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
