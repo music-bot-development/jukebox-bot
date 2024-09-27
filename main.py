@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import requests
 from getVersion import *
+import streaming
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
