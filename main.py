@@ -1,10 +1,10 @@
 import os
 import sys
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
-import streaming
-
+import requests
+from getVersion import *
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
@@ -13,11 +13,9 @@ OPUS_PATH = os.getenv('OPUS_PATH')
 discord.opus.load_opus(OPUS_PATH)
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="/", intents=intents)
-tree = bot.tree
 
-# Track voice clients for each guild
-bot.custom_voice_clients = {}
+bot = commands.Bot(command_prefix="/", intents=intents, status=discord.Status.dnd)
+tree = bot.tree
 
 
 @bot.event
@@ -28,6 +26,15 @@ async def on_ready():
     if channel:
         await channel.send("Bot has started up!")
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
+    update_activity.start()
+
+
+@tasks.loop(minutes=1)  # Update every minute 
+async def update_activity():
+    latest_version = fetch_latest_release()
+    activity = discord.Game(name=latest_version)
+    await bot.change_presence(activity=activity)
+    print(f"Bot activity updated to latest version: {latest_version}")
 
 
 @tree.command(name="stop", description="Shuts down the bot, useful for simulating crashes")
