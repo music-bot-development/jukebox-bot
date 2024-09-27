@@ -76,6 +76,11 @@ async def leave(interaction: discord.Interaction):
 
 @tree.command(name="rickroll", description="Rickrolls some people")
 async def rickroll(interaction: discord.Interaction, channel: str):
+    # Check if the user has administrator permissions
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
+        return
+
     guild = interaction.guild
     voice_channel = discord.utils.get(guild.voice_channels, name=channel)  # Get the actual voice channel object
 
@@ -87,8 +92,9 @@ async def rickroll(interaction: discord.Interaction, channel: str):
     rickroll_url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'  # Define the Rickroll URL
 
     # Start streaming in the correct voice channel
-    await interaction.response.send_message(f"Rickrolling with: {rickroll_url}")
     await streaming.startStreaming(voice_client, interaction, voice_channel, bot, rickroll_url)  
+    await interaction.response.send_message(f"Rickrolling with: {rickroll_url}")
+
 
 
 @tree.command(name="play-yt", description="Streams audio from a YouTube video.")
