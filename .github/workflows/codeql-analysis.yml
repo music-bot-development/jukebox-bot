@@ -21,35 +21,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Setze Python-Version, falls notwendig
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12' # Gib hier die Version ein, die du nutzt
-
-      # Initialisiere CodeQL
+      # Initialisiere CodeQL (ohne die setup-python Action, da CodeQL selbst Python erkennt)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: ${{ matrix.language }}
-          # Optional: hier kannst du eine Konfigurationsdatei angeben
-          # config-file: .github/codeql-config.yml
 
       # Automatische Analyse mit CodeQL
       - name: Autobuild
         uses: github/codeql-action/autobuild@v2
 
-      # Optional: benutzerdefinierte Build-Schritte, falls notwendig
-       - name: Custom Build
-         run: |
-           pip install -r requirements.txt
-           python setup.py build
-
       # CodeQL-Analyse durchführen
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         with:
-          # Führt umfassende Sicherheits- und Qualitätsabfragen durch
           category: "/language:${{ matrix.language }}"
 
       # Erweiterte Regeln und Abfragen für mehr Sicherheit und Qualität
