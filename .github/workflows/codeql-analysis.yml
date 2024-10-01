@@ -1,0 +1,44 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # Manuelle Ausführung des Workflows möglich
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: CodeQL Analyze
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [python]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Initialisiere CodeQL (ohne die setup-python Action, da CodeQL selbst Python erkennt)
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+
+      # Automatische Analyse mit CodeQL
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      # CodeQL-Analyse durchführen
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{ matrix.language }}"
+
+      # Erweiterte Regeln und Abfragen für mehr Sicherheit und Qualität
+      - name: Additional Queries
+        uses: github/codeql-action/analyze@v2
+        with:
+          queries: +security-and-quality
