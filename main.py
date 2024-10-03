@@ -61,14 +61,15 @@ async def gamble(interaction: discord.Interaction, amount: int):
         user_points[user_id] -= amount
         await interaction.response.send_message(f"Sorry, you lost {amount} points. You now have {user_points[user_id]} points.")
 
-# Command to check your own points
-@tree.command(name="points", description="Check how many points you have.")
-async def points(interaction: discord.Interaction):
-    user_id = interaction.user.id
+# Command to check a users points
+@tree.command(name="points", description="Check how many points a user has.")
+async def points(interaction: discord.Interaction, user: discord.User):
+    user_id = user.id
     if user_id not in user_points:
         user_points[user_id] = 100  # Start users with 100 points
 
-    await interaction.response.send_message(f"You have {user_points[user_id]} points.")
+    await interaction.response.send_message(f"<@{user_id}> has {user_points[user_id]} points.")
+
 
 # Command to check the leaderboard
 @tree.command(name="leaderboard", description="Check the top users by points.")
