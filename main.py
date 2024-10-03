@@ -187,4 +187,11 @@ async def stop(interaction: discord.Interaction):
 def cleanup(client):
     client.stop()
 
+
+@tree.command(name="who-created-the-pyramids", description="Tells you the answer to who created the pyramids")
+async def who_created_the_pyramids(interaction: discord.Interaction):
+    await interaction.response.send_message(file=discord.File('images/pyramids-aliens-meme.jpg'))
+
+
+
 bot.run(TOKEN)
