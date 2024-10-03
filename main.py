@@ -16,7 +16,7 @@ discord.opus.load_opus(OPUS_PATH)
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="/", intents=intents, status=discord.Status.dnd)
+bot = commands.Bot(command_prefix="/", intents=intents)
 bot.custom_voice_clients = {}  # Initialize the custom_voice_clients attribute
 tree = bot.tree
 
