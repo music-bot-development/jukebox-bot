@@ -5,9 +5,12 @@ on:
     branches: '*'
   pull_request:
     branches: '*'
-
-  # Manuelle Ausführung des Workflows möglich
   workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  security-events: write
 
 jobs:
   analyze:
