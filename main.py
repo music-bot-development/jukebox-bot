@@ -3,10 +3,8 @@ import sys
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-import requests
 from getVersion import *
 import streaming
-import random
 
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
@@ -20,8 +18,8 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 bot.custom_voice_clients = {}  # Initialize the custom_voice_clients attribute
 tree = bot.tree
 
-# A dictionary to store user points
-user_points = {}
+# Load the gambling cog
+bot.load_extension("cogs.gambling")
 
 @bot.event
 async def on_ready():
