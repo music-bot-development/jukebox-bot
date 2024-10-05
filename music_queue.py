@@ -22,6 +22,7 @@ class queue:
     def goto_next_song(self) -> None:
         """Skips the current song and goes to the next song or
         loops the queue if looping is enabled."""
+        
         del self.url_array[0]
 
         if len(self.url_array) <= 0 and self.loop_when_done_playing:
