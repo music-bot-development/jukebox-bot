@@ -27,10 +27,16 @@ AUTO_UPDATE = False
 # A dictionary to store user points
 user_points = {}
 
+from urllib.parse import urlparse
+
 def is_url_valid(url: str):
     is_valid = True
 
-    if not "youtube.com" in url:
+    try:
+        parsed_url = urlparse(url)
+        if parsed_url.hostname != "youtube.com":
+            is_valid = False
+    except Exception as e:
         is_valid = False
 
     return is_valid
