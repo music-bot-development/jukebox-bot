@@ -2,12 +2,15 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [main]
+    branches: '*'
   pull_request:
-    branches: [main]
-
-  # Manuelle Ausführung des Workflows möglich
+    branches: '*'
   workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  security-events: write
 
 jobs:
   analyze:
