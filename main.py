@@ -34,7 +34,7 @@ def is_url_valid(url: str):
 
     try:
         parsed_url = urlparse(url)
-        if parsed_url.hostname != "youtube.com":
+        if parsed_url.hostname != "www.youtube.com":
             is_valid = False
     except Exception as e:
         is_valid = False
@@ -118,6 +118,10 @@ async def stop(interaction: discord.Interaction):
     await interaction.response.send_message("Stopping...")
     voice_client = bot.custom_voice_clients.get(interaction.guild.id)
     voice_client.stop()
+
+@tree.command(name="listqueue", description="Lists the elements of the queue.")
+async def listqueue(interaction: discord.Interaction):
+    await interaction.response.send_message(MAIN_QUEUE.list_queue())
 
 #TODO: Remove Repetitive Code
 @tree.command(name="skip", description="Skips the current song.")
