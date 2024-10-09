@@ -34,7 +34,7 @@ def is_url_valid(url: str):
 
     try:
         parsed_url = urlparse(url)
-        if parsed_url.hostname != "www.youtube.com":
+        if parsed_url.hostname != "www.youtube.com" or parsed_url.hostname != "youtu.be":
             is_valid = False
     except Exception as e:
         is_valid = False
