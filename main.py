@@ -165,7 +165,7 @@ async def ai(interaction: discord.Interaction, prompt: str):
     if response.status_code == 200:
         data = response.json()
         actual_response = data.get("response", "No response found.")
-        message = f"You ({interaction.user.mention}): {prompt}\nAI: {actual_response} ||AI's and LLM's can make mistakes, verify important info||"
+        message = f"You ({interaction.user.mention}): {prompt}\nAI: {actual_response} \n||AI's and LLM's can make mistakes, verify important info||"
         await interaction.followup.send(message)  # Follow-up Nachricht senden
     else:
         error_message = f"Error: {response.status_code} - {response.text}"
