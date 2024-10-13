@@ -8,6 +8,7 @@ from getVersion import *
 import music_queue
 import streaming
 import random
+from urllib.parse import urlparse
 
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
@@ -22,12 +23,12 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 bot.custom_voice_clients = {}  # Initialize the custom_voice_clients attribute
 tree = bot.tree
 
-AUTO_UPDATE = False
+AUTO_UPDATE = True
 
 # A dictionary to store user points
 user_points = {}
 
-from urllib.parse import urlparse
+
 
 def is_url_valid(url: str):
     is_valid = True
@@ -142,5 +143,9 @@ async def crash(interaction: discord.Interaction):
     await interaction.response.send_message("Shutting down...")
     await bot.close()
     sys.exit()
+
+@tree.command(name="ask-ai", description="Asks chatgpt 3.")
+async def ai(interaction: discord.Interaction, prompt: str):
+    ...
 
 bot.run(TOKEN)
