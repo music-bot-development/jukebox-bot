@@ -24,8 +24,6 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 bot.custom_voice_clients = {}  # Initialize the custom_voice_clients attribute
 tree = bot.tree
 
-AUTO_UPDATE = True
-
 # A dictionary to store user points
 user_points = {}
 
@@ -47,20 +45,15 @@ def is_url_valid(url: str):
 async def on_ready():
     await tree.sync()  # Sync slash commands
     print("Slash commands have been synced.")
+    latest_version = fetch_latest_release()
+    activity = discord.Game(name=latest_version)
+    await bot.change_presence(activity=activity)
+    print(f"\nBot activity updated to latest version: {latest_version}\n")
     channel = bot.get_channel(LOG_CHANNEL_ID)
     if channel:
         await channel.send("Bot has started up!")
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     
-    if AUTO_UPDATE:
-        update_activity.start()
-
-@tasks.loop(minutes=1)  # Update every minute 
-async def update_activity():
-    latest_version = fetch_latest_release()
-    activity = discord.Game(name=latest_version)
-    await bot.change_presence(activity=activity)
-    print(f"Bot activity updated to latest version: {latest_version}")
 
 # Existing voice-related commands, etc.
 @tree.command(name="join", description="Makes the bot join a voice channel")
