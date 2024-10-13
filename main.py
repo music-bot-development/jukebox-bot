@@ -7,8 +7,9 @@ import requests
 from getVersion import *
 import music_queue
 import streaming
-import random
 from urllib.parse import urlparse
+import requests
+import json
 
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
@@ -146,6 +147,29 @@ async def crash(interaction: discord.Interaction):
 
 @tree.command(name="ask-ai", description="Asks chatgpt 3.")
 async def ai(interaction: discord.Interaction, prompt: str):
-    await interaction.response.send_message("Comming soon!")
+    await interaction.response.defer()  # Antwort aufschieben, um mehr Zeit zu haben
+
+    url = "http://localhost:11434/api/generate"
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "model": "mistral:7b",
+        "prompt": "Answer in a short and elegant way to this prompt:"+prompt,
+        "stream": False
+    }
+
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+
+    if response.status_code == 200:
+        data = response.json()
+        actual_response = data.get("response", "No response found.")
+        message = f"You ({interaction.user.mention}): {prompt}\nAI: {actual_response} ||AI's and LLM's can make mistakes, verify important info||"
+        await interaction.followup.send(message)  # Follow-up Nachricht senden
+    else:
+        error_message = f"Error: {response.status_code} - {response.text}"
+        print(error_message)
+        await interaction.followup.send("An error occurred while processing your request.")
 
 bot.run(TOKEN)
