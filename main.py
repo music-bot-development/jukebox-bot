@@ -10,13 +10,14 @@ import streaming
 from urllib.parse import urlparse
 import requests
 import json
+from flask import Flask
+from threading import Thread
 
+# Lade Umgebungsvariablen
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
-#OPUS_PATH = os.getenv('OPUS_PATH')
 MAIN_QUEUE = music_queue.queue([], False)
-#discord.opus.load_opus(OPUS_PATH)
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -24,21 +25,29 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 bot.custom_voice_clients = {}  # Initialize the custom_voice_clients attribute
 tree = bot.tree
 
-# A dictionary to store user points
-user_points = {}
+# Flask App erstellen für den HTTP-Server
+app = Flask('')
 
+@app.route('/')
+def home():
+    return "Bot is online!", 200
 
+def run():
+    app.run(host='0.0.0.0', port=8080)
 
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# Überprüfe, ob die URL gültig ist
 def is_url_valid(url: str):
     is_valid = True
-
     try:
         parsed_url = urlparse(url)
         if parsed_url.hostname != "www.youtube.com" or parsed_url.hostname != "youtu.be":
             is_valid = False
     except Exception as e:
         is_valid = False
-
     return is_valid
 
 @bot.event
@@ -53,9 +62,11 @@ async def on_ready():
     if channel:
         await channel.send("Bot has started up!")
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    
 
-# Existing voice-related commands, etc.
+# Startet den Webserver, wenn der Bot startet
+keep_alive()
+
+# Ab hier folgt dein bestehender Code (Voice Commands, Queue, etc.)
 @tree.command(name="join", description="Makes the bot join a voice channel")
 async def join(interaction: discord.Interaction, channel_name: str):
     guild = interaction.guild
@@ -118,7 +129,6 @@ async def stop(interaction: discord.Interaction):
 async def listqueue(interaction: discord.Interaction):
     await interaction.response.send_message(MAIN_QUEUE.list_queue())
 
-#TODO: Remove Repetitive Code
 @tree.command(name="skip", description="Skips the current song.")
 async def skip(interaction: discord.Interaction):
     await interaction.response.send_message("Skipping...")
