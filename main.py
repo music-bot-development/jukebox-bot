@@ -146,6 +146,6 @@ async def crash(interaction: discord.Interaction):
 
 @tree.command(name="ask-ai", description="Asks chatgpt 3.")
 async def ai(interaction: discord.Interaction, prompt: str):
-    ...
+    await interaction.response.send_message("Comming soon!")
 
 bot.run(TOKEN)
