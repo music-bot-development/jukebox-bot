@@ -15,6 +15,7 @@ import ai
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
+AI_MODEL = os.getenv('AI_MODEL')
 MAIN_QUEUE = music_queue.queue([], False)
 intents = discord.Intents.default()
 intents.message_content = True
@@ -156,7 +157,7 @@ async def askAi(interaction: discord.Interaction, prompt: str):
     global ai_convo
     await interaction.response.defer()
 
-    ai_response, conversation = ai.generate(prompt, ai_convo)
+    ai_response, conversation = ai.generate(prompt, ai_convo, interaction.user.mention, bot.user.mention, AI_MODEL)
     ai_convo = conversation
 
     await interaction.followup.send(ai_response)
@@ -172,7 +173,7 @@ async def clearConvo(interaction: discord.Interaction):
     if role:
         global ai_convo 
         ai_convo = ai.conversation()
-        await interaction.response.send_message("Conversation cleared!", ephemeral=True)
+        await interaction.response.send_message("Conversation cleared!")
     else:
         await interaction.response.send_message("You do not have permission to clear the conversation.", ephemeral=True)
 

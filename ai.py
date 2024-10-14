@@ -23,7 +23,7 @@ class conversation:
             convo_str += item.full_message + "\n"
         return convo_str
 
-def generate(prompt: str, prev_conversation: conversation):
+def generate(prompt: str, prev_conversation: conversation, username: str, botuser: str, model: str):
     url = "http://localhost:11434/api/generate"
     headers = {
         "Content-Type": "application/json"
@@ -33,7 +33,7 @@ def generate(prompt: str, prev_conversation: conversation):
     updated_conversation = prev_conversation.add_message(prompt_msg)
 
     data = {
-        "model": "mistral:7b",
+        "model": model,
         "prompt": f"You have been talking wiht a user, this is the conversation, answer the latest message sent by the user:  {updated_conversation.get_conversation_string()}",
         "stream": False
     }
@@ -44,7 +44,7 @@ def generate(prompt: str, prev_conversation: conversation):
         data = response.json()
         actual_response = data.get("response", "No response found.")
         ai_message = message("AI:", actual_response)
-        return f"You : {prompt}\n{ai_message.full_message} \n||AI's and LLM's can make mistakes, verify important info||", updated_conversation.add_message(ai_message)
+        return f"{username}:{prompt}\n\n {botuser}:\n{actual_response} \n||AI's and LLM's can make mistakes, verify important info||", updated_conversation.add_message(ai_message)
 
     else:
         error_message = f"Error: {response.status_code} - {response.text}"
