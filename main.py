@@ -161,7 +161,7 @@ async def askAi(interaction: discord.Interaction, prompt: str):
 
     await interaction.followup.send(ai_response)
 
-@bot.tree.command(name="clearConvo", description="Clear's the current conversation")
+@bot.tree.command(name="clearconversation", description="Clear's the current conversation")
 async def clearConvo(interaction: discord.Interaction):
 
     user = interaction.user

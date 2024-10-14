@@ -21,7 +21,6 @@ class conversation:
 
         for item in self.message_list:
             convo_str += item.full_message + "\n"
-        print("Convo String:", convo_str)
         return convo_str
 
 def generate(prompt: str, prev_conversation: conversation):
