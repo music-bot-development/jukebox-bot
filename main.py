@@ -41,11 +41,13 @@ def keep_alive():
 
 # Überprüfe, ob die URL gültig ist
 def is_url_valid(url: str):
-    is_valid = True
+    is_valid = False
     try:
         parsed_url = urlparse(url)
-        if parsed_url.hostname != "www.youtube.com" or parsed_url.hostname != "youtu.be":
-            is_valid = False
+        if "youtube.com" in parsed_url.hostname or "youtu.be" in parsed_url.hostname:
+            is_valid = True
+        else:
+            print("Invalid URL")
     except Exception as e:
         is_valid = False
     return is_valid
