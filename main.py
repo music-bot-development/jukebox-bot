@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from flask import Flask
 from threading import Thread
 import ai
-
+import asyncio
 # Lade Umgebungsvariablen
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
@@ -156,7 +156,9 @@ async def askAi(interaction: discord.Interaction, prompt: str):
     global ai_convo
     await interaction.response.defer()
 
-    ai_response, conversation = ai.generate_answer(prompt, ai_convo, interaction.user.mention, bot.user.mention)
+    #ai_response, conversation = ai.generate_answer(prompt, ai_convo, interaction.user.mention, bot.user.mention)
+    ai_response, conversation = await asyncio.to_thread(ai.generate_answer, prompt, ai_convo, interaction.user.mention, bot.user.mention)
+
     ai_convo = conversation
 
     await interaction.followup.send(ai_response)
