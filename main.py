@@ -150,7 +150,7 @@ async def crash(interaction: discord.Interaction):
     await bot.close()
     sys.exit()
 
-@tree.command(name="ask-ai", description="Asks chatgpt 3.")
+@tree.command(name="ask-ai", description="Asks an AI.")
 async def ai(interaction: discord.Interaction, prompt: str):
     await interaction.response.defer()  # Antwort aufschieben, um mehr Zeit zu haben
 
