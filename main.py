@@ -3,15 +3,13 @@ import sys
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-import requests
 from getVersion import *
 import music_queue
 import streaming
 from urllib.parse import urlparse
-import requests
-import json
 from flask import Flask
 from threading import Thread
+import ai
 
 # Lade Umgebungsvariablen
 load_dotenv()
@@ -150,31 +148,33 @@ async def crash(interaction: discord.Interaction):
     await bot.close()
     sys.exit()
 
-@tree.command(name="ask-ai", description="Asks an AI.")
-async def ai(interaction: discord.Interaction, prompt: str):
-    await interaction.response.defer()  # Antwort aufschieben, um mehr Zeit zu haben
 
-    url = "http://localhost:11434/api/generate"
-    headers = {
-        "Content-Type": "application/json"
-    }
+ai_convo = ai.conversation()
 
-    data = {
-        "model": "mistral:7b",
-        "prompt": "Answer in a short and elegant way to this prompt:"+prompt,
-        "stream": False
-    }
+@bot.tree.command(name="ask-ai", description="Ask the AI something.")
+async def askAi(interaction: discord.Interaction, prompt: str):
+    global ai_convo
+    await interaction.response.defer()
 
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    ai_response, conversation = ai.generate(prompt, ai_convo)
+    ai_convo = conversation
 
-    if response.status_code == 200:
-        data = response.json()
-        actual_response = data.get("response", "No response found.")
-        message = f"You ({interaction.user.mention}): {prompt}\nAI: {actual_response} \n||AI's and LLM's can make mistakes, verify important info||"
-        await interaction.followup.send(message)  # Follow-up Nachricht senden
+    await interaction.followup.send(ai_response)
+
+@bot.tree.command(name="clearconversation", description="Clear's the current conversation")
+async def clearConvo(interaction: discord.Interaction):
+
+    user = interaction.user
+
+    role_name = "// Bot Developer"
+    role = discord.utils.get(user.roles, name=role_name)
+
+    if role:
+        global ai_convo 
+        ai_convo = ai.conversation()
+        await interaction.response.send_message("Conversation cleared!", ephemeral=True)
     else:
-        error_message = f"Error: {response.status_code} - {response.text}"
-        print(error_message)
-        await interaction.followup.send("An error occurred while processing your request.")
+        await interaction.response.send_message("You do not have permission to clear the conversation.", ephemeral=True)
+
 
 bot.run(TOKEN)
