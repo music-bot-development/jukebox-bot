@@ -37,7 +37,7 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# TODO: Die Funktion returned häufig false obwohl die URL stimmt.
+
 def is_url_valid(url: str):
     is_valid = False
     try:
