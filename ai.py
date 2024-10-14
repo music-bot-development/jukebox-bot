@@ -34,7 +34,7 @@ def generate(prompt: str, prev_conversation: conversation):
 
     data = {
         "model": "mistral:7b",
-        "prompt": f"You have been talking wiht a user, this is the conversation, answer the latest message sent by the user:  {updated_conversation.get_conversation_string()}",
+        "prompt": f"You have been talking with a user, this is the conversation, answer the latest message sent by the user:  {updated_conversation.get_conversation_string()}",
         "stream": False
     }
 
