@@ -11,10 +11,20 @@ from flask import Flask
 from threading import Thread
 import ai
 import asyncio
+
+
+
+def isInBetaProgram(user: discord.Member) -> bool:
+    role_name = "// Beta Tester"
+    role = discord.utils.get(user.roles, name=role_name)
+    return role is not None
+
+
 # Lade Umgebungsvariablen
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
+AI_MODEL = os.getenv('AI_MODEL')
 MAIN_QUEUE = music_queue.queue([], False)
 intents = discord.Intents.default()
 intents.message_content = True
@@ -37,7 +47,7 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# TODO: Die Funktion returned häufig false obwohl die URL stimmt.
+
 def is_url_valid(url: str):
     is_valid = False
     try:
@@ -52,8 +62,10 @@ def is_url_valid(url: str):
 
 @bot.event
 async def on_ready():
-    await tree.sync()  # Sync slash commands
-    print("Slash commands have been synced.")
+    for guild in bot.guilds:
+        await tree.sync(guild=guild)
+        print(f'Commands synced for guild {guild.name}.')
+
     latest_version = fetch_latest_release()
     activity = discord.Game(name=latest_version)
     await bot.change_presence(activity=activity)
@@ -174,7 +186,7 @@ async def clearConvo(interaction: discord.Interaction):
     if role:
         global ai_convo 
         ai_convo = ai.conversation()
-        await interaction.response.send_message("Conversation cleared!", ephemeral=True)
+        await interaction.response.send_message("Conversation cleared!")
     else:
         await interaction.response.send_message("You do not have permission to clear the conversation.", ephemeral=True)
 

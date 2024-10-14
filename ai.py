@@ -23,7 +23,6 @@ class conversation:
         return convo_str
 
 
-
 def generate_answer(prompt: str, prev_conversation: conversation, username: str, botuser: str):
     answer = ""
     for part in generate('mistral:7b', f'This has been the previous conversation: {prev_conversation.get_conversation_string()}. Answer this in a short, elegant way: {prompt}', stream=True):
@@ -34,3 +33,4 @@ def generate_answer(prompt: str, prev_conversation: conversation, username: str,
     updated_conversation = prev_conversation.add_message(ai_message)
     
     return ai_message.full_message, updated_conversation 
+
