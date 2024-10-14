@@ -152,15 +152,22 @@ async def crash(interaction: discord.Interaction):
 
 ai_convo = ai.conversation()
 
-@bot.tree.command(name="ask-ai", description="Ask the AI something.")
+@bot.tree.command(name="beta-ask-ai", description="Ask the AI something.")
 async def askAi(interaction: discord.Interaction, prompt: str):
     global ai_convo
-    await interaction.response.defer()
 
-    ai_response, conversation = ai.generate(prompt, ai_convo, interaction.user.mention, bot.user.mention, AI_MODEL)
-    ai_convo = conversation
+    user = interaction.user
+    role_name = "// Beta Tester"
+    role = discord.utils.get(user.roles, name=role_name)
+    if role:
+        await interaction.response.defer()
 
-    await interaction.followup.send(ai_response)
+        ai_response, conversation = ai.generate(prompt, ai_convo, user.mention, bot.user.mention, AI_MODEL)
+        ai_convo = conversation
+
+        await interaction.followup.send(ai_response)
+    else:
+        await interaction.response.send_message(f"{user.mention} you are not in the beta program, try again later!")
 
 @bot.tree.command(name="clearconversation", description="Clear's the current conversation")
 async def clearConvo(interaction: discord.Interaction):
