@@ -8,8 +8,13 @@ import music_queue
 import streaming
 from urllib.parse import urlparse
 from flask import Flask
-from threading import Thread
 import ai
+
+
+def isInBetaProgram(user: discord.Member) -> bool:
+    role_name = "// Beta Tester"
+    role = discord.utils.get(user.roles, name=role_name)
+    return role is not None
 
 # Lade Umgebungsvariablen
 load_dotenv()
@@ -53,8 +58,10 @@ def is_url_valid(url: str):
 
 @bot.event
 async def on_ready():
-    await tree.sync()  # Sync slash commands
-    print("Slash commands have been synced.")
+    for guild in bot.guilds:
+        await tree.sync(guild=guild)
+        print(f'Commands synced for guild {guild.name}.')
+
     latest_version = fetch_latest_release()
     activity = discord.Game(name=latest_version)
     await bot.change_presence(activity=activity)
@@ -156,18 +163,15 @@ ai_convo = ai.conversation()
 async def askAi(interaction: discord.Interaction, prompt: str):
     global ai_convo
 
-    user = interaction.user
-    role_name = "// Beta Tester"
-    role = discord.utils.get(user.roles, name=role_name)
-    if role:
+    if isInBetaProgram(interaction.user):
         await interaction.response.defer()
 
-        ai_response, conversation = ai.generate(prompt, ai_convo, user.mention, bot.user.mention, AI_MODEL)
+        ai_response, conversation = ai.generate(prompt, ai_convo, interaction.user.mention, bot.user.mention, AI_MODEL)
         ai_convo = conversation
 
         await interaction.followup.send(ai_response)
     else:
-        await interaction.response.send_message(f"{user.mention} you are not in the beta program, try again later!")
+        await interaction.response.send_message(f"{interaction.user.mention} you are not in the beta program, try again later!")
 
 @bot.tree.command(name="clearconversation", description="Clear's the current conversation")
 async def clearConvo(interaction: discord.Interaction):
