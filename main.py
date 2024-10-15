@@ -60,12 +60,16 @@ def is_url_valid(url: str):
         is_valid = False
     return is_valid
 
-@bot.event
-async def on_ready():
+async def syncCommands():
     for guild in bot.guilds:
+        tree.copy_global_to(guild=guild)
         await tree.sync(guild=guild)
         print(f'Commands synced for guild {guild.name}.')
 
+
+@bot.event
+async def on_ready():
+    await syncCommands()
     latest_version = fetch_latest_release()
     activity = discord.Game(name=latest_version)
     await bot.change_presence(activity=activity)
@@ -163,8 +167,9 @@ async def crash(interaction: discord.Interaction):
 
 ai_convo = ai.conversation()
 
+#Todo: add the custom model thing support (only admins)
 @bot.tree.command(name="ask-ai", description="Ask the AI something.")
-async def askAi(interaction: discord.Interaction, prompt: str):
+async def askAi(interaction: discord.Interaction, prompt: str, model: str = "mistral:7b"):
     if isInBetaProgram(interaction.user):
         global ai_convo
         await interaction.response.defer()
