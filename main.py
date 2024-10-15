@@ -3,20 +3,29 @@ import sys
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-import requests
 from getVersion import *
 import music_queue
 import streaming
 from urllib.parse import urlparse
-import requests
-import json
+from flask import Flask
+from threading import Thread
+import ai
+import asyncio
 
+
+
+def isInBetaProgram(user: discord.Member) -> bool:
+    role_name = "// Beta Tester"
+    role = discord.utils.get(user.roles, name=role_name)
+    return role is not None
+
+
+# Lade Umgebungsvariablen
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 LOG_CHANNEL_ID = int(os.getenv('LOG_CHANNEL_ID'))
-#OPUS_PATH = os.getenv('OPUS_PATH')
+AI_MODEL = os.getenv('AI_MODEL')
 MAIN_QUEUE = music_queue.queue([], False)
-#discord.opus.load_opus(OPUS_PATH)
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -24,45 +33,52 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 bot.custom_voice_clients = {}  # Initialize the custom_voice_clients attribute
 tree = bot.tree
 
-AUTO_UPDATE = True
+# Flask App erstellen für den HTTP-Server
+app = Flask('')
 
-# A dictionary to store user points
-user_points = {}
+@app.route('/')
+def home():
+    return "Bot is online!", 200
 
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
 
 
 def is_url_valid(url: str):
-    is_valid = True
-
+    is_valid = False
     try:
         parsed_url = urlparse(url)
-        if parsed_url.hostname != "www.youtube.com" or parsed_url.hostname != "youtu.be":
-            is_valid = False
+        if "youtube.com" in parsed_url.hostname or "youtu.be" in parsed_url.hostname:
+            is_valid = True
+        else:
+            print("Invalid URL")
     except Exception as e:
         is_valid = False
-
     return is_valid
 
 @bot.event
 async def on_ready():
-    await tree.sync()  # Sync slash commands
-    print("Slash commands have been synced.")
+    for guild in bot.guilds:
+        await tree.sync(guild=guild)
+        print(f'Commands synced for guild {guild.name}.')
+
+    latest_version = fetch_latest_release()
+    activity = discord.Game(name=latest_version)
+    await bot.change_presence(activity=activity)
+    print(f"\nBot activity updated to latest version: {latest_version}\n")
     channel = bot.get_channel(LOG_CHANNEL_ID)
     if channel:
         await channel.send("Bot has started up!")
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    
-    if AUTO_UPDATE:
-        update_activity.start()
 
-@tasks.loop(minutes=1)  # Update every minute 
-async def update_activity():
-    latest_version = fetch_latest_release()
-    activity = discord.Game(name=latest_version)
-    await bot.change_presence(activity=activity)
-    print(f"Bot activity updated to latest version: {latest_version}")
+# Startet den Webserver, wenn der Bot startet
+keep_alive()
 
-# Existing voice-related commands, etc.
+# Ab hier folgt dein bestehender Code (Voice Commands, Queue, etc.)
 @tree.command(name="join", description="Makes the bot join a voice channel")
 async def join(interaction: discord.Interaction, channel_name: str):
     guild = interaction.guild
@@ -125,7 +141,6 @@ async def stop(interaction: discord.Interaction):
 async def listqueue(interaction: discord.Interaction):
     await interaction.response.send_message(MAIN_QUEUE.list_queue())
 
-#TODO: Remove Repetitive Code
 @tree.command(name="skip", description="Skips the current song.")
 async def skip(interaction: discord.Interaction):
     await interaction.response.send_message("Skipping...")
@@ -145,31 +160,35 @@ async def crash(interaction: discord.Interaction):
     await bot.close()
     sys.exit()
 
-@tree.command(name="ask-ai", description="Asks chatgpt 3.")
-async def ai(interaction: discord.Interaction, prompt: str):
-    await interaction.response.defer()  # Antwort aufschieben, um mehr Zeit zu haben
 
-    url = "http://localhost:11434/api/generate"
-    headers = {
-        "Content-Type": "application/json"
-    }
+ai_convo = ai.conversation()
 
-    data = {
-        "model": "mistral:7b",
-        "prompt": "Answer in a short and elegant way to this prompt:"+prompt,
-        "stream": False
-    }
+@bot.tree.command(name="ask-ai", description="Ask the AI something.")
+async def askAi(interaction: discord.Interaction, prompt: str):
+    global ai_convo
+    await interaction.response.defer()
 
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    #ai_response, conversation = ai.generate_answer(prompt, ai_convo, interaction.user.mention, bot.user.mention)
+    ai_response, conversation = await asyncio.to_thread(ai.generate_answer, prompt, ai_convo, interaction.user.mention, bot.user.mention)
 
-    if response.status_code == 200:
-        data = response.json()
-        actual_response = data.get("response", "No response found.")
-        message = f"You ({interaction.user.mention}): {prompt}\nAI: {actual_response} ||AI's and LLM's can make mistakes, verify important info||"
-        await interaction.followup.send(message)  # Follow-up Nachricht senden
+    ai_convo = conversation
+
+    await interaction.followup.send(ai_response)
+
+@bot.tree.command(name="clearconversation", description="Clear's the current conversation")
+async def clearConvo(interaction: discord.Interaction):
+
+    user = interaction.user
+
+    role_name = "// Bot Developer"
+    role = discord.utils.get(user.roles, name=role_name)
+
+    if role:
+        global ai_convo 
+        ai_convo = ai.conversation()
+        await interaction.response.send_message("Conversation cleared!")
     else:
-        error_message = f"Error: {response.status_code} - {response.text}"
-        print(error_message)
-        await interaction.followup.send("An error occurred while processing your request.")
+        await interaction.response.send_message("You do not have permission to clear the conversation.", ephemeral=True)
+
 
 bot.run(TOKEN)
