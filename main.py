@@ -193,7 +193,7 @@ async def clearConvo(interaction: discord.Interaction):
     role_name = "// Bot Developer"
     role = discord.utils.get(user.roles, name=role_name)
 
-    if role:
+    if role or isInBetaProgram(interaction.user):
         global ai_convo 
         ai_convo = ai.conversation()
         await interaction.response.send_message("Conversation cleared!")
