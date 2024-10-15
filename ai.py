@@ -34,3 +34,20 @@ def generate_answer(prompt: str, prev_conversation: conversation, username: str,
     
     return ai_message.full_message, updated_conversation 
 
+
+def generate_flushed_answer(prompt: str, prev_conversation: conversation):
+    for part in generate('mistral:7b', f'This has been the previous conversation: {prev_conversation.get_conversation_string()}. Answer this in a short, elegant way: {prompt}', stream=True):
+        print(part['response'], end='', flush=True)
+
+
+
+# ToDo: add conversational awareness to this too
+
+if __name__ == '__main__':
+    ai_convo = conversation()
+    while(True):
+        inpt = input("Enter a prompt or 'bye' to leave: ")
+        if inpt != "bye":
+            print(generate_flushed_answer(inpt, ai_convo))
+        else:
+            break
