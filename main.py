@@ -174,18 +174,16 @@ async def crash(interaction: discord.Interaction):
 ai_convo = ai.conversation()
 
 #Todo: add the custom model thing support (only admins)
-@bot.tree.command(name="ask-ai-test", description="Ask the AI something.")
+@bot.tree.command(name="ask-ai", description="Ask the AI something.")
 async def askAi(interaction: discord.Interaction, prompt: str, model: str = "mistral:7b"):
-    if isInBetaProgram(interaction.user):
-        global ai_convo
-        await interaction.response.defer()
 
-        ai_response, conversation = await asyncio.to_thread(ai.generate_answer, prompt, ai_convo, interaction.user.mention, bot.user.mention)
-        ai_convo = conversation
+    global ai_convo
+    await interaction.response.defer()
 
-        await interaction.followup.send(ai_response)
-    else:
-        await interaction.response.send_message(f"{interaction.user.mention} you aren't in the Beta Program, try again later!")
+    ai_response, conversation = await asyncio.to_thread(ai.generate_answer, prompt, ai_convo, interaction.user.mention, bot.user.mention)
+    ai_convo = conversation
+
+    await interaction.followup.send(ai_response)
 
 @bot.tree.command(name="clearconversation", description="Clear's the current conversation")
 async def clearConvo(interaction: discord.Interaction):
