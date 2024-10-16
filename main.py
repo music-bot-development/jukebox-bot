@@ -11,7 +11,7 @@ from flask import Flask
 from threading import Thread
 import ai
 import asyncio
-
+import discord.ext
 
 
 def isInBetaProgram(user: discord.Member) -> bool:
@@ -60,12 +60,22 @@ def is_url_valid(url: str):
         is_valid = False
     return is_valid
 
-@bot.event
-async def on_ready():
+async def syncCommands():
     for guild in bot.guilds:
+        # Lösche alte Befehle (keine asynchrone Methode, also ohne await)
+
+        bot.tree.clear_commands(guild=guild)
+        print(f'Old commands cleared for guild {guild.name}.')
+
+        # Kopiere und synchronisiere neue Befehle
+        tree.copy_global_to(guild=guild)
         await tree.sync(guild=guild)
         print(f'Commands synced for guild {guild.name}.')
 
+
+@bot.event
+async def on_ready():
+    await syncCommands()
     latest_version = fetch_latest_release()
     activity = discord.Game(name=latest_version)
     await bot.change_presence(activity=activity)
@@ -163,14 +173,14 @@ async def crash(interaction: discord.Interaction):
 
 ai_convo = ai.conversation()
 
+#Todo: add the custom model thing support (only admins)
 @bot.tree.command(name="ask-ai", description="Ask the AI something.")
-async def askAi(interaction: discord.Interaction, prompt: str):
+async def askAi(interaction: discord.Interaction, prompt: str, model: str = "mistral:7b"):
+
     global ai_convo
     await interaction.response.defer()
 
-    #ai_response, conversation = ai.generate_answer(prompt, ai_convo, interaction.user.mention, bot.user.mention)
     ai_response, conversation = await asyncio.to_thread(ai.generate_answer, prompt, ai_convo, interaction.user.mention, bot.user.mention)
-
     ai_convo = conversation
 
     await interaction.followup.send(ai_response)
@@ -183,7 +193,7 @@ async def clearConvo(interaction: discord.Interaction):
     role_name = "// Bot Developer"
     role = discord.utils.get(user.roles, name=role_name)
 
-    if role:
+    if role or isInBetaProgram(interaction.user):
         global ai_convo 
         ai_convo = ai.conversation()
         await interaction.response.send_message("Conversation cleared!")
