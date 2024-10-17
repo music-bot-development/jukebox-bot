@@ -16,3 +16,11 @@ pydub==0.25.1
 yt_dlp
 psutil
 flask
+
+discord
+python-dotenv
+requests
+yt_dlp
+psutil
+flask
+ollama
